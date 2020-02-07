@@ -55,7 +55,21 @@ def enable_selective_dynamics(format_type, regex):
 		c = 8 + int(number_of_atoms[j])
 	
 		for i in range(8,len(f_read)):			
-			if i != c:
+			if i == c-1:
+				print(f_read[i].split( )[2], atomic_species[j])
+				print("i = ", i)
+				print("c = ", c)
+				if float(f_read[i].split( )[2]) < height:
+					g.write(f_read[i].strip("\n") + " T T T !" + atomic_species[j] + "\n")
+				elif float(f_read[i].split( )[2]) > height:
+					g.write(f_read[i].strip("\n") + " F F F !" + atomic_species[j] + "\n")
+				try:
+					j=j+1
+					c = c + int(number_of_atoms[j])
+					print("Going onto next element: ", atomic_species[j])
+				except:
+					print("end of loop") 
+			else:
 				print(f_read[i].split( )[2], atomic_species[j])
 				print("i = ", i)
 				print("c = ", c)
@@ -64,17 +78,7 @@ def enable_selective_dynamics(format_type, regex):
 				elif float(f_read[i].split( )[2]) > height:
 					g.write(f_read[i].strip("\n") + " F F F !" + atomic_species[j] + "\n")
 
-			elif i == c:
-				print(f_read[i].split( )[2], atomic_species[j])
-				print("i = ", i)
-				print("c = ", c)
-				if float(f_read[i].split( )[2]) < height:
-					g.write(f_read[i].strip("\n") + " T T T !" + atomic_species[j] + "\n")
-				elif float(f_read[i].split( )[2]) > height:
-					g.write(f_read[i].strip("\n") + " F F F !" + atomic_species[j] + "\n")
-				print("Going onto next element: ", atomic_species[j+1])
-				j=j+1
-				c = c + int(number_of_atoms[j]) 
+				
 
 	else: 
 		try:
@@ -93,6 +97,7 @@ def enable_selective_dynamics(format_type, regex):
 
 if selective_dynamics == "y":
 		format_type, regex = check_format()
+		print(format_type, regex)
 		enable_selective_dynamics(format_type, regex)
 else:
 	pass	
