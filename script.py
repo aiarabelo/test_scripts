@@ -4,7 +4,7 @@ class ProcessFile:
 	"""
 	FUNCTION: This class provides methods that for reading the POSCAR
 	"""
-	def __init__(self, filename="POSCAR", output_filename="test_POSCAR"):
+	def __init__(self, filename="POSCAR2", output_filename="test_POSCAR"):
 		self.filename = filename 
 		self.output_filename = output_filename
 
@@ -79,7 +79,7 @@ class SelectiveDynamics(ProcessFile):
 		else: 	
 			if float(self.f_read[i].split( )[2]) < height:
 				self.g.write(self.f_read[i].replace(r.group(0), "T T T !" + r.group(0)))
-			elif float(self.f_read[i].split( )[2]) > height:
+			elif float(self.f_rexad[i].split( )[2]) > height:
 				self.g.write(self.f_read[i].replace(r.group(0), "F F F !" + r.group(0)))
 			else:
 				pass
@@ -128,22 +128,40 @@ class SelectiveDynamics(ProcessFile):
 		"""
 		self.write_coordinates(self.format_type, self.regex)
 
-# class BiUModeling(ProcessFile):
-# 	"""
-# 	FUNCTION: This class provides methods to adjust the POSCAR to treat a certain 
-# 			  layer as the bulk and another layer as the surface depending on
-# 			  the number of layers 
-# 	TODO: This is hardcoded for CuO. Consider bond length z-components from PyMatGen
-# 	"""
-# 	def __init__(self, tot_layers, surface_layers):
-# 		self.tot_layers = tot_layers
-# 		self.surface_layers = surface_layers
+class BiUModeling(ProcessFile):
+	
+	"""
+	FUNCTION: This class provides methods to adjust the POSCAR to treat a certain 
+			  layer as the bulk and another layer as the surface depending on
+			  the number of layers 
+	REMINDER: Put the adsorbate at the end 
+	TODO: This is hardcoded for CuO. Consider bond length z-components from PyMatGen
+	"""
+	def __init__(self, tot_layers=7, surface_layers=2, adsorbate_atoms=2, tolerance=0.01):
+		ProcessFile.__init__(self)
 
-# 	def separate_layers():
-# 		pass
+		self.tot_layers = int(tot_layers)
+		self.surface_layers = int(surface_layers)
+		self.adsorbate_atoms = int(adsorbate_atoms)
+		self.tolerance = float(tolerance)
 
-sd = SelectiveDynamics("0.28")
-sd.execute()
+	def get_heights(self):
+		heights = []
 
+		for height in range(8, len(self.f_read) - self.adsorbate_atoms):
+			heights.append(self.f_read[height].split( )[2])
+
+		max_height = float(max(heights))
+
+		height_range = max_height/self.tot_layers
+		adjusted_height_range = height_range - self.tolerance
+		print(adjusted_height_range)
+
+
+	def separate_layers(self):
+		pass
+
+biu = BiUModeling()
+biu.get_heights() 
 
 
