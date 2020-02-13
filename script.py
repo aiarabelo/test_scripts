@@ -8,23 +8,22 @@ class ProcessFile:
 		self.filename = filename 
 		self.output_filename = output_filename
 
-	def read_file(self):
 		f = open(self.filename, "r")
 		self.f_read = f.readlines()
 
-		return self.f_read
+	# def read_file(self):
+	# 	f = open(self.filename, "r")
+	# 	self.f_read = f.readlines()
+
+	# 	return self.f_read
 
 	def structure_details(self):
-		self.f_read = self.read_file()
-
 		atomic_species = self.f_read[5].split( )
 		number_of_atoms = self.f_read[6].split( )
 
 		return atomic_species, number_of_atoms
 
 	def write_file(self):
-		self.f_read = self.read_file()
-
 		g = open(self.output_filename, "a+")
 		self.g = g
 		for i in range(0,7):
@@ -33,8 +32,6 @@ class ProcessFile:
 		return self.g 
 
 	def check_format(self):
-		self.f_read = self.read_file()
-
 		try: 
 			regex = r"(![a-zA-Z]+)+"
 			r = re.search(regex, self.f_read[8])
@@ -58,21 +55,12 @@ class ProcessFile:
 
 class SelectiveDynamics(ProcessFile):
 	def __init__(self, height):
-		pf = ProcessFile()
-		self.pf = pf
-
-		format_type, regex = pf.check_format()
-		self.format_type = format_type
-		self.regex = regex
-
-		self.g = self.pf.write_file()
-		self.f_read = self.pf.read_file()
-
-		atomic_species, number_of_atoms = pf.structure_details()
-		self.atomic_species = atomic_species 
-		self.number_of_atoms = number_of_atoms 
+		ProcessFile.__init__(self)
 
 		self.height = float(height)
+		self.format_type, self.regex = self.check_format()
+		self.atomic_species, self.number_of_atoms = self.structure_details()
+		self.g = self.write_file()
 
 	def write_coordinate_labels(self, i, height, format_type, atom_counter = None, r = None):
 		"""
@@ -140,19 +128,19 @@ class SelectiveDynamics(ProcessFile):
 		"""
 		self.write_coordinates(self.format_type, self.regex)
 
-class BiUModeling(ProcessFile):
-	"""
-	FUNCTION: This class provides methods to adjust the POSCAR to treat a certain 
-			  layer as the bulk and another layer as the surface depending on
-			  the number of layers 
-	TODO: This is hardcoded for CuO. Consider bond length z-components from PyMatGen
-	"""
-	def __init__(self, tot_layers, surface_layers):
-		self.tot_layers = tot_layers
-		self.surface_layers = surface_layers
+# class BiUModeling(ProcessFile):
+# 	"""
+# 	FUNCTION: This class provides methods to adjust the POSCAR to treat a certain 
+# 			  layer as the bulk and another layer as the surface depending on
+# 			  the number of layers 
+# 	TODO: This is hardcoded for CuO. Consider bond length z-components from PyMatGen
+# 	"""
+# 	def __init__(self, tot_layers, surface_layers):
+# 		self.tot_layers = tot_layers
+# 		self.surface_layers = surface_layers
 
-	def separate_layers():
-		pass
+# 	def separate_layers():
+# 		pass
 
 sd = SelectiveDynamics("0.28")
 sd.execute()
