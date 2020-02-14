@@ -102,9 +102,6 @@ class SelectiveDynamics(ProcessFile):
 		
 			for i in range(8,len(self.f_read)):			
 				if i == c-1:
-					print("i = ", i)
-					print("c = ", c)
-					print(self.f_read[i].split( )[2], self.atomic_species[j])
 					self.write_coordinate_labels(i, self.height, format_type)
 					try:
 						j=j+1
@@ -137,13 +134,17 @@ class BiUModeling(ProcessFile):
 	REMINDER: Put the adsorbate at the end 
 	TODO: This is hardcoded for CuO. Consider bond length z-components from PyMatGen
 	"""
-	def __init__(self, tot_layers=7, surface_layers=2, adsorbate_atoms=2, tolerance=0.01):
+	def __init__(self, tot_layers=7, surface_layers=2, adsorbate_atoms=2, tolerance=0, atoms = "Cu_B Cu O O"):
 		ProcessFile.__init__(self)
 
 		self.tot_layers = int(tot_layers)
 		self.surface_layers = int(surface_layers)
 		self.adsorbate_atoms = int(adsorbate_atoms)
 		self.tolerance = float(tolerance)
+		self.format_type, self.regex = self.check_format()
+		self.atoms = atoms
+		self.g = self.write_file()
+		self.atomic_species, self.number_of_atoms = self.structure_details()
 
 	def get_heights(self):
 		heights = []
@@ -154,14 +155,107 @@ class BiUModeling(ProcessFile):
 		max_height = float(max(heights))
 
 		height_range = max_height/self.tot_layers
-		adjusted_height_range = height_range - self.tolerance
-		print(adjusted_height_range)
+		self.adjusted_height_range = height_range - self.tolerance
+		print(self.adjusted_height_range)
+		return self.adjusted_height_range
+
+	def write_coordinates(self, i, adjusted_height_range, format_type, atom_counter = None, r = None):
+		"""
+		FUNCTION: Adds the selective dynamic labels and adds the atom identity as a comment
+		ARGUMENTS: 
+			i: the current iteration (loop is in write_coordinates method)
+			height: freeze below this height (in Angstroms)
+			atom_counter: counter used for labeling 
+			r: for regex
+		"""
+		bulk_counter = 0
+		self.bulk_counter = bulk_counter
+
+		self.g.write(self.f_read[7])			
+
+		if self.format_type == 3:
+			j = 0 
+			self.j = j
+			c = 8 + int(self.number_of_atoms[j])
+		
+			for i in range(8,len(self.f_read)):			
+
+				if i == c-1:
+					# self.write_layer_labels(i, self.height, format_type)
+					try:
+						self.j=self.j+1
+						c = c + int(self.number_of_atoms[j])
+						print("Going onto next element: ", self.atomic_species[self.j])
+					except:
+						print("end of loop") 
+				else:
+					print(self.f_read[i].split( )[2], self.atomic_species[self.j])
+					# self.write_layer_labels(i, self.height, self.format_type, atom_counter=self.j)
+
+				if float(self.f_read[i].split( )[2]) < self.adjusted_height_range*(self.tot_layers-self.surface_layers):
+					self.g.write(self.f_read[i].strip("\n") + " ! bulk " + self.atomic_species[self.j] + "\n")
+					if self.j == 0:
+						self.bulk_counter = self.bulk_counter + 1
+				elif float(self.f_read[i].split( )[2]) > self.adjusted_height_range*(self.tot_layers-self.surface_layers):
+					self.g.write(self.f_read[i].strip("\n") + " ! surface " + self.atomic_species[self.j] + "\n")
+		else: 
+			print("type asd")
+			for i in range(8,len(self.f_read)):
+				r = re.search(regex, self.f_read[i])
+				# self.write_layer_labels(i, self.height, self.format_type, r=r)
+
+				if float(self.f_read[i].split( )[2]) < self.adjusted_height_range*(self.tot_layers-self.surface_layers):
+					if self.j == 0:
+						self.bulk_counter = self.bulk_counter + 1
+				elif float(self.f_rexad[i].split( )[2]) > self.adjusted_height_range*(self.tot_layers-self.surface_layers):
+					self.g.write(self.f_read[i].replace(r.group(0), " ! surface " + r.group(0)))
+				else:
+					pass
+
+		return self.bulk_counter
 
 
-	def separate_layers(self):
+	def separate_layers(self, bulk_counter):
+
+		f2 = open(self.output_filename, "r")
+		self.f2_read = f2.readlines()
+
+		h = open("new_POSCAR", "a+")
+		self.h = h 
+		for i in range(0, 5):
+			h.write(self.f2_read[i])
+
+		h.write(self.atoms + "\n")
+
+		h.write(str(self.bulk_counter) + " ")
+		for x in range(0, int(self.j)+1):
+			if x == 0: 
+				h.write(str(int(self.number_of_atoms[x]) - self.bulk_counter) + " ")
+			else: 
+				try: 
+					h.write(str(self.number_of_atoms[x]) + " ")
+
+				except: 
+					h.write("\n")
+		h.write("\n")
+		for i in range(8, len(self.f2_read)):
+			h.write(self.f2_read[i])
+
+	def rearrange_layers(self):
 		pass
 
+	def execute(self):
+		adjusted_height_range = self.get_heights()
+		self.bulk_counter = self.write_coordinates(self.adjusted_height_range, self.format_type, self.regex)
+		print(self.bulk_counter)
+		self.separate_layers(self.bulk_counter)
+		
+
+class FixMAGMOM():
+	pass
+
 biu = BiUModeling()
-biu.get_heights() 
+biu.execute() 
+print(biu.check_format())
 
 
