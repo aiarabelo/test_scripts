@@ -47,7 +47,7 @@ class ProcessFile:
 
 		return format_type, regex
 
-	def write_labels(self, standard, i, format_type, label1=None, label0=None):
+	def write_labels(self, standard, i, format_type, label1, label0):
 		"""
 		FUNCTION: Write labels, depending on functionality
 		ARGUMENTS:
@@ -65,9 +65,9 @@ class ProcessFile:
 				self.g.write(self.f_read[i].strip("\n") + label0 + self.atomic_species[self.j] + "\n")
 		else: 	
 			if float(self.f_read[i].split( )[2]) < standard:
-				self.g.write(self.f_read[i].replace(r.group(0), label1 + r.group(0)))
+				self.g.write(self.f_read[i].replace(self.r.group(0), label1 + self.r.group(0)))
 			elif float(self.f_rexad[i].split( )[2]) > standard:
-				self.g.write(self.f_read[i].replace(r.group(0), label0 + r.group(0)))
+				self.g.write(self.f_read[i].replace(self.r.group(0), label0 + self.r.group(0)))
 			else:
 				pass
 
@@ -81,7 +81,7 @@ class SelectiveDynamics(ProcessFile):
 		self.atomic_species, self.number_of_atoms = self.structure_details()
 		self.g = self.write_file()
 
-	def write_coordinate_labels(self, i, height, format_type, atom_counter = None, r = None):
+	def write_coordinate_labels(self, i, height, format_type):
 		"""
 		FUNCTION: Adds the selective dynamic labels and adds the atom identity as a comment
 		ARGUMENTS: 
@@ -110,7 +110,7 @@ class SelectiveDynamics(ProcessFile):
 		
 			for i in range(8,len(self.f_read)):			
 				if i == c-1:
-					self.write_coordinate_labels(i, self.height, self.format_type, atom_counter=self.j)
+					self.write_coordinate_labels(i, self.height, self.format_type)
 					try:
 						self.j=self.j+1
 						c = c + int(self.number_of_atoms[j])
@@ -119,11 +119,12 @@ class SelectiveDynamics(ProcessFile):
 						print("end of loop") 
 				else:
 					print(self.f_read[i].split( )[2], self.atomic_species[self.j])
-					self.write_coordinate_labels(i, self.height, self.format_type, atom_counter=self.j)
+					self.write_coordinate_labels(i, self.height, self.format_type)
 		else: 
 			for i in range(8,len(self.f_read)):
 				r = re.search(regex, self.f_read[i])
-				self.write_coordinate_labels(i, self.height, self.format_type, r=r)
+				self.r = r 
+				self.write_coordinate_labels(i, self.height, self.format_type)
 
 	def execute(self):
 		"""
