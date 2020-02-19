@@ -173,7 +173,23 @@ class BiUModeling(ProcessFile):
 		return bulk_height
 
 	def rearrange_layers(self):
+		"""
+		FUNCTION: Rearranges layers (intention: within each species)
+		ARGUMENTS: 
+			.
+		"""
 		pass
+
+	def write_coordinate_labels(self):
+		pass
+
+	def write_coordinates(self):
+		"""
+		FUNCTION: Writes 
+		"""
+		pass
+
+		
 
 	# def write_coordinate_labels(self, i, height):
 	# 	"""
