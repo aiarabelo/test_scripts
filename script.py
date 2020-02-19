@@ -308,5 +308,5 @@ class BiUWithSelectiveDynamics(ProcessFile):
 	pass
 
 
-biu = BiUModeling()
-print(biu.get_bulk_height())
+sd = SelectiveDynamics("0.38")
+sd.execute()
