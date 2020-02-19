@@ -110,15 +110,15 @@ class SelectiveDynamics(ProcessFile):
 		
 			for i in range(8,len(self.f_read)):			
 				if i == c-1:
-					self.write_coordinate_labels(i, self.height, format_type)
+					self.write_coordinate_labels(i, self.height, self.format_type, atom_counter=self.j)
 					try:
-						j=j+1
+						self.j=self.j+1
 						c = c + int(self.number_of_atoms[j])
-						print("Going onto next element: ", self.atomic_species[j])
+						print("Going onto next element: ", self.atomic_species[self.j])
 					except:
 						print("end of loop") 
 				else:
-					print(self.f_read[i].split( )[2], self.atomic_species[j])
+					print(self.f_read[i].split( )[2], self.atomic_species[self.j])
 					self.write_coordinate_labels(i, self.height, self.format_type, atom_counter=self.j)
 		else: 
 			for i in range(8,len(self.f_read)):
@@ -252,6 +252,12 @@ class BiUModeling(ProcessFile):
 			h.write(self.f2_read[i])
 
 	def rearrange_layers(self):
+		"""
+		FUNCTION: Rearranges the POSCAR coordinates according to z-coordinate, and then according to y-coordinate. 
+				  This is most relevant when working with antiferromagnetic materials, due to magnetic moments being relevant.
+		ARGUMENTS: 
+			
+		"""
 		pass
 
 	def execute(self):
