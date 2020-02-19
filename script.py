@@ -11,12 +11,6 @@ class ProcessFile:
 		f = open(self.filename, "r")
 		self.f_read = f.readlines()
 
-	# def read_file(self):
-	# 	f = open(self.filename, "r")
-	# 	self.f_read = f.readlines()
-
-	# 	return self.f_read
-
 	def structure_details(self):
 		atomic_species = self.f_read[5].split( )
 		number_of_atoms = self.f_read[6].split( )
@@ -53,6 +47,31 @@ class ProcessFile:
 
 		return format_type, regex
 
+	def write_labels(self, standard, i, format_type, label1=None, label0=None):
+		"""
+		FUNCTION: Write labels, depending on functionality
+		ARGUMENTS:
+			standard: for bi U modeling this would be what decides if it's a surface or not
+					  for selective dynamics this would be what decides what should be frozen or not (height)
+			label: the label at the end of the coordinates
+				   for bi U modeling this is just a comment of classification of bulk (1)/surface (0)and what species it corresponds to
+				   for selective dynamics this is the T T T (1) or F F F (0) and a comment of the species
+		"""
+
+		if format_type == 3:
+			if float(self.f_read[i].split( )[2]) < standard:
+				self.g.write(self.f_read[i].strip("\n") + label1 + self.atomic_species[self.j] + "\n")
+			elif float(self.f_read[i].split( )[2]) > standard:
+				self.g.write(self.f_read[i].strip("\n") + label0 + self.atomic_species[self.j] + "\n")
+		else: 	
+			if float(self.f_read[i].split( )[2]) < standard:
+				self.g.write(self.f_read[i].replace(r.group(0), label1 + r.group(0)))
+			elif float(self.f_rexad[i].split( )[2]) > standard:
+				self.g.write(self.f_read[i].replace(r.group(0), label0 + r.group(0)))
+			else:
+				pass
+
+
 class SelectiveDynamics(ProcessFile):
 	def __init__(self, height):
 		ProcessFile.__init__(self)
@@ -71,18 +90,7 @@ class SelectiveDynamics(ProcessFile):
 			atom_counter: counter used for labeling 
 			r: for regex
 		"""
-		if format_type == 3:
-			if float(self.f_read[i].split( )[2]) < height:
-				self.g.write(self.f_read[i].strip("\n") + " T T T !" + self.atomic_species[self.j] + "\n")
-			elif float(self.f_read[i].split( )[2]) > height:
-				self.g.write(self.f_read[i].strip("\n") + " F F F !" + self.atomic_species[self.j] + "\n")
-		else: 	
-			if float(self.f_read[i].split( )[2]) < height:
-				self.g.write(self.f_read[i].replace(r.group(0), "T T T !" + r.group(0)))
-			elif float(self.f_rexad[i].split( )[2]) > height:
-				self.g.write(self.f_read[i].replace(r.group(0), "F F F !" + r.group(0)))
-			else:
-				pass
+		self.write_labels(height, i, format_type, label1 = " T T T !", label0 = " F F F !")
 
 	def write_coordinates(self, format_type, regex):
 		"""
@@ -145,6 +153,7 @@ class BiUModeling(ProcessFile):
 		self.atoms = atoms
 		self.g = self.write_file()
 		self.atomic_species, self.number_of_atoms = self.structure_details()
+		# self.standard = self.adjusted_height_range*(self.tot_layers-self.surface_layers)
 
 	def get_heights(self):
 		heights = []
@@ -170,12 +179,13 @@ class BiUModeling(ProcessFile):
 		"""
 		bulk_counter = 0
 		self.bulk_counter = bulk_counter
+		j = 0 
+		self.j = j
 
 		self.g.write(self.f_read[7])			
 
 		if self.format_type == 3:
-			j = 0 
-			self.j = j
+
 			c = 8 + int(self.number_of_atoms[j])
 		
 			for i in range(8,len(self.f_read)):			
@@ -201,13 +211,13 @@ class BiUModeling(ProcessFile):
 		else: 
 			print("type asd")
 			for i in range(8,len(self.f_read)):
-				r = re.search(regex, self.f_read[i])
+				r = re.search(self.regex, self.f_read[i])
 				# self.write_layer_labels(i, self.height, self.format_type, r=r)
 
 				if float(self.f_read[i].split( )[2]) < self.adjusted_height_range*(self.tot_layers-self.surface_layers):
 					if self.j == 0:
 						self.bulk_counter = self.bulk_counter + 1
-				elif float(self.f_rexad[i].split( )[2]) > self.adjusted_height_range*(self.tot_layers-self.surface_layers):
+				elif float(self.f_read[i].split( )[2]) > self.adjusted_height_range*(self.tot_layers-self.surface_layers):
 					self.g.write(self.f_read[i].replace(r.group(0), " ! surface " + r.group(0)))
 				else:
 					pass
@@ -254,8 +264,10 @@ class BiUModeling(ProcessFile):
 class FixMAGMOM():
 	pass
 
-biu = BiUModeling()
-biu.execute() 
-print(biu.check_format())
+class BiUWithSelectiveDynamics(ProcessFile):
+	pass
 
+
+sd = SelectiveDynamics("0.38")
+sd.execute()
 
