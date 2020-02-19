@@ -145,16 +145,43 @@ class BiUModeling(ProcessFile):
     
     def get_number_of_bulk_atoms(self):
         """
-        FUNCTION: Returns the number of transition metal bulk atoms
+        FUNCTION: Returns the number of transition metal bulk atoms (first element)
         """
-        pass
+        number_of_bulk_atoms = int(self.number_of_atoms[0]) - self.surface_layers*(int(self.number_of_atoms[0])/self.tot_layers)
+        return number_of_bulk_atoms
 
-    def execute(self):
-        self.write_preamble()
-        self.atomic_species.insert(0, '%s_B' % self.atomic_species[0])
+    def write_new_atomic_species(self):
         for i in range(len(self.atomic_species)):
             self.wf.write(" %s" % (self.atomic_species[i]))
         self.wf.write("\n")
+
+    def write_new_number_of_atoms(self):
+        number_of_bulk_atoms = self.get_number_of_bulk_atoms()
+        self.number_of_atoms[0] = str(int(int(self.number_of_atoms[0]) - number_of_bulk_atoms))
+        self.number_of_atoms.insert(0, str(int(number_of_bulk_atoms)))
+        for i in range(len(self.number_of_atoms)):
+            self.wf.write(" %s" % (self.number_of_atoms[i]))
+        self.wf.write("\n")
+    
+    def write_coordinates(self):
+        # for i in range(len(self.atomic_species)):
+        #     if i == 0: 
+        #         pass
+        pass
+
+    def rearrange_layers(self):
+        """
+        FUNCTION: Rearranges the layers of first element according to 
+        """
+
+                
+    
+    def execute(self):
+        self.write_preamble()
+        self.atomic_species.insert(0, '%s_B' % self.atomic_species[0])
+        self.write_new_atomic_species()
+        self.write_new_number_of_atoms()
+
 
 biu = BiUModeling()
 biu.execute()
