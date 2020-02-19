@@ -85,7 +85,7 @@ class SelectiveDynamics(ProcessFile):
     def define_sd_labels(self, i, j):
         if float(self.overall_list_of_coordinates[i][j][2]) < self.height:
             label = "T T T !"
-        if float(self.overall_list_of_coordinates[i][j][2]) > self.height:
+        else:
             label = "F F F !"
         return label
 
@@ -117,14 +117,13 @@ class BiUModeling(ProcessFile):
 	TODO: This is hardcoded for CuO (clean). Consider bond length z-components from PyMatGen and surfaces with adsorbed atoms
 	"""
     def __init__(self, tot_layers = 7, surface_layers = 2, adsorbate_atoms = 0,
-                 tolerance = 0, atoms = "Cu_B Cu O"):
+                 tolerance = 0):
         ProcessFile.__init__(self)
        
         self.tot_layers = int(tot_layers)
         self.surface_layers = int(surface_layers)
         self.adsorbate_atoms = int(adsorbate_atoms)
         self.tolerance = float(tolerance)
-        self.atoms = atoms
 
     def get_adjusted_height_range(self):
         """
@@ -152,7 +151,10 @@ class BiUModeling(ProcessFile):
 
     def execute(self):
         self.write_preamble()
-        self.wf.write(self.atoms)
+        self.atomic_species.insert(0, '%s_B' % self.atomic_species[0])
+        for i in range(len(self.atomic_species)):
+            self.wf.write(" %s" % (self.atomic_species[i]))
+        self.wf.write("\n")
 
 biu = BiUModeling()
 biu.execute()
