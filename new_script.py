@@ -18,10 +18,10 @@ class ProcessFile:
 
     def write_preamble(self):
         """
-        FUNCTION: writes the first 7 lines of the POSCAR
+        FUNCTION: writes the first 5 lines of the POSCAR
         TODO: Change this to 5 if Bi-u modeling 
         """
-        for i in range(0,7):
+        for i in range(0,5):
             self.wf.write(self.f_read[i])
 
     def initialize_list_of_elements(self):
@@ -101,16 +101,58 @@ class SelectiveDynamics(ProcessFile):
                              )
             print("Moving on")
         
-
     def execute(self):
         self.write_preamble()
+        for i in range(5,7):
+            self.wf.write(self.f_read[i])
         self.wf.write("Selective Dynamics \n")
-        self.wf.write(self.f_read[7])
         self.write_coordinates()
 
 class BiUModeling(ProcessFile):
-    def __init__(self, height):
+    """
+	FUNCTION: This class provides methods to adjust the POSCAR to treat a certain 
+			  layer as the bulk and another layer as the surface depending on
+			  the number of layers specified
+	REMINDER: Put the adsorbate at the end 
+	TODO: This is hardcoded for CuO (clean). Consider bond length z-components from PyMatGen and surfaces with adsorbed atoms
+	"""
+    def __init__(self, tot_layers = 7, surface_layers = 2, adsorbate_atoms = 0,
+                 tolerance = 0, atoms = "Cu_B Cu O"):
         ProcessFile.__init__(self)
+       
+        self.tot_layers = int(tot_layers)
+        self.surface_layers = int(surface_layers)
+        self.adsorbate_atoms = int(adsorbate_atoms)
+        self.tolerance = float(tolerance)
+        self.atoms = atoms
 
-sd = SelectiveDynamics("0.37")
-sd.execute()
+    def get_adjusted_height_range(self):
+        """
+        FUNCTION: Returns the approximate height of each layer
+        """
+        heights = []
+        for height in range(8, len(self.f_read) - self.adsorbate_atoms):
+            heights.append(self.f_read[height].split( )[2])
+
+        max_height = float(max(heights))
+        height_range = max_height/self.tot_layers
+        adjusted_height_range = height_range - self.tolerance
+        return adjusted_height_range
+
+    def get_bulk_height(self):
+        self.adjusted_height_range = self.get_adjusted_height_range()
+        bulk_height = self.adjusted_height_range*(self.tot_layers-self.surface_layers)
+        return bulk_height
+    
+    def get_number_of_bulk_atoms(self):
+        """
+        FUNCTION: Returns the number of transition metal bulk atoms
+        """
+        pass
+
+    def execute(self):
+        self.write_preamble()
+        self.wf.write(self.atoms)
+
+biu = BiUModeling()
+biu.execute()
