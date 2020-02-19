@@ -77,24 +77,40 @@ class SelectiveDynamics(ProcessFile):
     FUNCTION: Freezes based on given height 
     TODO: Base on # of desired layers to be frozen as well 
     """
-    def __init__(self, height=None):
+    def __init__(self, height):
         ProcessFile.__init__(self)
+        self.overall_list_of_coordinates = self.parse_coordinates()
+        self.height = float(height)
+    
+    def define_sd_labels(self, i, j):
+        if float(self.overall_list_of_coordinates[i][j][2]) < self.height:
+            label = "T T T !"
+        if float(self.overall_list_of_coordinates[i][j][2]) > self.height:
+            label = "F F F !"
+        return label
 
     def write_coordinates(self): 
-        n = self.parse_coordinates()
-        return n
-
+        for i in range(len(self.overall_list_of_coordinates)):
+            for j in range(len(self.overall_list_of_coordinates[i])):
+                print(self.overall_list_of_coordinates[i][j])
+                label = self.define_sd_labels(i, j)
+                self.wf.write("%s %s %s %s \n" % (self.overall_list_of_coordinates[i][j][0],
+                                                  self.overall_list_of_coordinates[i][j][1],
+                                                  self.overall_list_of_coordinates[i][j][2], 
+                                                  label)
+                             )
+            print("Moving on")
+        
 
     def execute(self):
         self.write_preamble()
         self.wf.write("Selective Dynamics \n")
         self.wf.write(self.f_read[7])
-        n = self.write_coordinates()
-        print(n[1][1])
+        self.write_coordinates()
 
 class BiUModeling(ProcessFile):
     def __init__(self, height):
         ProcessFile.__init__(self)
 
-sd = SelectiveDynamics()
+sd = SelectiveDynamics("0.37")
 sd.execute()
