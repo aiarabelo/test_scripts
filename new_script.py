@@ -123,6 +123,19 @@ class FixMAGMOM(ProcessFile):
         self.adsorbate_atoms = int(adsorbate_atoms)
         self.tolerance = float(tolerance)
 
+    def initialize_list_of_layers(self):
+        overall_list_of_layers = []
+        list_of_layers = []
+        
+        for x in range(self.tot_layers):
+            l = []
+            list_of_layers.append(l)
+        
+        for x in range(len(self.atomic_species)):
+            overall_list_of_layers.append(list_of_layers)
+
+        return overall_list_of_layers
+    
     def get_adjusted_height_range(self):
         """
         FUNCTION: Returns the approximate height of each layer
@@ -154,8 +167,40 @@ class FixMAGMOM(ProcessFile):
         """
         self.overall_list_of_coordinates[0].sort(key = lambda z: float(z[2]))     
 
-    def loop_through_layers(self):
-        pass
+    def rearrange_layers_by_y(self):
+        """
+        FUNCTION: Returns a list (based on elements) of lists (based on layer # noting layer = 0 on python corresponds to layer 1 in structure)
+                  of lists (of the coordinates of each atom) rearranged by y-axis and ascending layer order 
+        """ 
+        self.adjusted_height_range = self.get_adjusted_height_range()
+        self.rearrange_layers_by_z()
+        self.rearranged_overall_coordinates = []
+        self.overall_list_of_layers = self.initialize_list_of_layers()
+        
+        for i in range(len(self.atomic_species)):
+            for k in range(len(self.overall_list_of_coordinates[i])):
+                for j in range(self.tot_layers):
+                    previous_layer_height = j*self.adjusted_height_range
+                    layer_height = (j+1)*self.adjusted_height_range
+                    if previous_layer_height < float(self.overall_list_of_coordinates[i][k][2]) < layer_height:
+                        self.overall_list_of_layers[i][j].append(self.overall_list_of_coordinates[i][k])
+                    else:
+                        continue
+
+        return self.overall_list_of_layers
+
+    def write_rearranged_layers(self):
+        self.overall_list_of_layers = self.rearrange_layers_by_y()
+        for i in range(len(self.atomic_species)):    
+            for j in range(self.tot_layers):
+                self.overall_list_of_layers[i][j].sort(key = lambda y: float(y[1]))  
+                for x in range(len(self.overall_list_of_layers[i][j])):
+                    self.wf.write("%s %s %s ! %s \n" % (self.overall_list_of_layers[i][j][x][0], 
+                                                        self.overall_list_of_layers[i][j][x][1], 
+                                                        self.overall_list_of_layers[i][j][x][2],
+                                                        self.atomic_species[i]))
+
+### NOTE: self.overall_list_of_coordinates is a list of lists; the lists it contains corresponds to each element in the POSCAR. The lists in THOSE lists correspond to the coordinates; this isn't arranged according to y-axis yet 
 
 class BiUModeling(FixMAGMOM):
     """
@@ -206,9 +251,6 @@ class BiUModeling(FixMAGMOM):
         self.rearrange_layers_by_z()
         self.reassign_atomic_species()
         self.write_coordinates()
-
-
     
-
-biu = BiUModeling()
-biu.execute()
+fm = FixMAGMOM()
+fm.write_rearranged_layers()
