@@ -125,15 +125,10 @@ class FixMAGMOM(ProcessFile):
 
     def initialize_list_of_layers(self):
         overall_list_of_layers = []
-        list_of_layers = []
-        
-        for x in range(self.tot_layers):
-            l = []
-            list_of_layers.append(l)
-        
-        for x in range(len(self.atomic_species)):
-            overall_list_of_layers.append(list_of_layers)
-
+        for i in range(len(self.atomic_species)):
+            overall_list_of_layers.append([])
+            for j in range(self.tot_layers):
+                overall_list_of_layers[i].append([])
         return overall_list_of_layers
     
     def get_adjusted_height_range(self):
@@ -198,7 +193,7 @@ class FixMAGMOM(ProcessFile):
                     self.wf.write("%s %s %s ! %s \n" % (self.overall_list_of_layers[i][j][x][0], 
                                                         self.overall_list_of_layers[i][j][x][1], 
                                                         self.overall_list_of_layers[i][j][x][2],
-                                                        self.atomic_species[i]))
+                                                        self.overall_list_of_layers[i][j][x][3]))
 
 ### NOTE: self.overall_list_of_coordinates is a list of lists; the lists it contains corresponds to each element in the POSCAR. The lists in THOSE lists correspond to the coordinates; this isn't arranged according to y-axis yet 
 
