@@ -1,12 +1,5 @@
-x = []
-li = ["Cu", "O", "O"]
-li.insert(0, '%s_B' % (li[0]))
-wf = open("sdasd", "a+")
+x = [["423", "123"], ["123", "432"], ["903", "23"]]
 
-for i in range(len(li)):
-    wf.write("%s " % (li[i]))
+x.sort(key=lambda y: int(y[1]))
 
-wf.write("\n ")
-wf.write("dasdasd")
-    
-print(li)
+print(x)

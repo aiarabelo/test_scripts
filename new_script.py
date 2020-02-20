@@ -120,6 +120,8 @@ class BiUModeling(ProcessFile):
                  tolerance = 0):
         ProcessFile.__init__(self)
        
+        self.overall_list_of_coordinates = self.parse_coordinates()
+
         self.tot_layers = int(tot_layers)
         self.surface_layers = int(surface_layers)
         self.adsorbate_atoms = int(adsorbate_atoms)
@@ -162,25 +164,41 @@ class BiUModeling(ProcessFile):
         for i in range(len(self.number_of_atoms)):
             self.wf.write(" %s" % (self.number_of_atoms[i]))
         self.wf.write("\n")
-    
-    def write_coordinates(self):
-        # for i in range(len(self.atomic_species)):
-        #     if i == 0: 
-        #         pass
-        pass
 
     def rearrange_layers(self):
         """
-        FUNCTION: Rearranges the layers of first element according to 
+        FUNCTION: Rearranges the layers of first element according to ascending order (z-axis)
         """
-
-                
+        self.overall_list_of_coordinates[0].sort(key = lambda z: float(z[2]))
     
+    def reassign_atomic_species(self):
+        """
+        FUNCTION: Correctly label bulk transition metal
+        """
+        for i in range(int(self.number_of_atoms[0])):
+            self.overall_list_of_coordinates[0][i][3] = self.atomic_species[0]
+        print(self.overall_list_of_coordinates[0])
+    
+    def write_coordinates(self):
+        for i in range(len(self.overall_list_of_coordinates)):
+            for j in range(len(self.overall_list_of_coordinates[i])):
+                print(self.overall_list_of_coordinates[i][j])
+                # label = self.define_sd_labels(i, j)
+                self.wf.write("%s %s %s ! %s \n" % (self.overall_list_of_coordinates[i][j][0],
+                                                  self.overall_list_of_coordinates[i][j][1],
+                                                  self.overall_list_of_coordinates[i][j][2], 
+                                                  self.overall_list_of_coordinates[i][j][3])
+                             )
+            print("Moving on")
+        
     def execute(self):
         self.write_preamble()
         self.atomic_species.insert(0, '%s_B' % self.atomic_species[0])
         self.write_new_atomic_species()
         self.write_new_number_of_atoms()
+        self.rearrange_layers()
+        self.reassign_atomic_species()
+        self.write_coordinates()
 
 
 biu = BiUModeling()
