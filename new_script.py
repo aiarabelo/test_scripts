@@ -108,14 +108,10 @@ class SelectiveDynamics(ProcessFile):
         self.wf.write("Selective Dynamics \n")
         self.write_coordinates()
 
-class BiUModeling(ProcessFile):
+class FixMAGMOM(ProcessFile):
     """
-	FUNCTION: This class provides methods to adjust the POSCAR to treat a certain 
-			  layer as the bulk and another layer as the surface depending on
-			  the number of layers specified
-	REMINDER: Put the adsorbate at the end 
-	TODO: This is hardcoded for CuO (clean). Consider bond length z-components from PyMatGen and surfaces with adsorbed atoms
-	"""
+    FUNCTION: Arranges the POSCAR coordinates based on layer #, then based on y-axis  
+    """
     def __init__(self, tot_layers = 7, surface_layers = 2, adsorbate_atoms = 0,
                  tolerance = 0):
         ProcessFile.__init__(self)
@@ -152,6 +148,24 @@ class BiUModeling(ProcessFile):
         number_of_bulk_atoms = int(self.number_of_atoms[0]) - self.surface_layers*(int(self.number_of_atoms[0])/self.tot_layers)
         return number_of_bulk_atoms
 
+    def rearrange_layers_by_z(self):
+        """
+        FUNCTION: Rearranges the layers of first element according to ascending order (z-axis)
+        """
+        self.overall_list_of_coordinates[0].sort(key = lambda z: float(z[2]))     
+
+    def loop_through_layers(self):
+        pass
+
+class BiUModeling(FixMAGMOM):
+    """
+	FUNCTION: This class provides methods to adjust the POSCAR to treat a certain 
+			  layer as the bulk and another layer as the surface depending on
+			  the number of layers specified
+	REMINDER: Put the adsorbate at the end 
+	TODO: This is hardcoded for CuO (clean). Consider bond length z-components from PyMatGen and surfaces with adsorbed atoms
+	"""
+
     def write_new_atomic_species(self):
         for i in range(len(self.atomic_species)):
             self.wf.write(" %s" % (self.atomic_species[i]))
@@ -164,12 +178,6 @@ class BiUModeling(ProcessFile):
         for i in range(len(self.number_of_atoms)):
             self.wf.write(" %s" % (self.number_of_atoms[i]))
         self.wf.write("\n")
-
-    def rearrange_layers(self):
-        """
-        FUNCTION: Rearranges the layers of first element according to ascending order (z-axis)
-        """
-        self.overall_list_of_coordinates[0].sort(key = lambda z: float(z[2]))
     
     def reassign_atomic_species(self):
         """
@@ -183,11 +191,10 @@ class BiUModeling(ProcessFile):
         for i in range(len(self.overall_list_of_coordinates)):
             for j in range(len(self.overall_list_of_coordinates[i])):
                 print(self.overall_list_of_coordinates[i][j])
-                # label = self.define_sd_labels(i, j)
                 self.wf.write("%s %s %s ! %s \n" % (self.overall_list_of_coordinates[i][j][0],
-                                                  self.overall_list_of_coordinates[i][j][1],
-                                                  self.overall_list_of_coordinates[i][j][2], 
-                                                  self.overall_list_of_coordinates[i][j][3])
+                                                    self.overall_list_of_coordinates[i][j][1],
+                                                    self.overall_list_of_coordinates[i][j][2], 
+                                                    self.overall_list_of_coordinates[i][j][3])
                              )
             print("Moving on")
         
@@ -196,10 +203,12 @@ class BiUModeling(ProcessFile):
         self.atomic_species.insert(0, '%s_B' % self.atomic_species[0])
         self.write_new_atomic_species()
         self.write_new_number_of_atoms()
-        self.rearrange_layers()
+        self.rearrange_layers_by_z()
         self.reassign_atomic_species()
         self.write_coordinates()
 
+
+    
 
 biu = BiUModeling()
 biu.execute()
