@@ -4,7 +4,7 @@ class ProcessFile:
     """
     FUNCTION: Provides methods for reading the POSCAR file
     """
-    def __init__(self, filename = "POSCAR2", output_filename = "xPOSCAR"):
+    def __init__(self, filename = "xPOSCAR", output_filename = "xxPOSCAR"):
         self.filename = filename
         self.output_filename = output_filename
         self.wf = open(self.output_filename, "a+")
@@ -62,51 +62,6 @@ class ProcessFile:
                 continue
 
         return self.overall_list_of_coordinates
-
-    def write_labels(self):
-        """
-        FUNCTION: writes the desired labels, based on functionality enabled 
-        """
-        pass      
-        
-    def loop_over_elements(self):
-        pass
-
-class SelectiveDynamics(ProcessFile):
-    """
-    FUNCTION: Freezes based on given height 
-    TODO: Base on # of desired layers to be frozen as well 
-    """
-    def __init__(self, height):
-        ProcessFile.__init__(self)
-        self.overall_list_of_coordinates = self.parse_coordinates()
-        self.height = float(height)
-    
-    def define_sd_labels(self, i, j):
-        if float(self.overall_list_of_coordinates[i][j][2]) < self.height:
-            label = "T T T !"
-        else:
-            label = "F F F !"
-        return label
-
-    def write_coordinates(self): 
-        for i in range(len(self.overall_list_of_coordinates)):
-            for j in range(len(self.overall_list_of_coordinates[i])):
-                print(self.overall_list_of_coordinates[i][j])
-                label = self.define_sd_labels(i, j)
-                self.wf.write("%s %s %s %s \n" % (self.overall_list_of_coordinates[i][j][0],
-                                                  self.overall_list_of_coordinates[i][j][1],
-                                                  self.overall_list_of_coordinates[i][j][2], 
-                                                  label)
-                             )
-            print("Moving on")
-        
-    def execute(self):
-        self.write_preamble()
-        for i in range(5,7):
-            self.wf.write(self.f_read[i])
-        self.wf.write("Selective Dynamics \n")
-        self.write_coordinates()
 
 class FixMAGMOM(ProcessFile):
     """
@@ -197,6 +152,46 @@ class FixMAGMOM(ProcessFile):
 
 ### NOTE: self.overall_list_of_coordinates is a list of lists; the lists it contains corresponds to each element in the POSCAR. The lists in THOSE lists correspond to the coordinates; this isn't arranged according to y-axis yet 
 
+class SelectiveDynamics(FixMAGMOM):
+    """
+    FUNCTION: Freezes based on given height 
+    TODO: Base on # of desired layers to be frozen as well 
+    """
+    def __init__(self, height, fix_magmom = True):
+        ProcessFile.__init__(self)
+        self.overall_list_of_coordinates = self.parse_coordinates()
+        self.height = float(height)
+        self.fix_magmom = fix_magmom
+
+    def define_sd_labels(self, i, j):
+        if float(self.overall_list_of_coordinates[i][j][2]) < self.height:
+            label = "T T T !"
+        else:
+            label = "F F F !"
+        return label
+
+    def write_coordinates(self): 
+        for i in range(len(self.overall_list_of_coordinates)):
+            for j in range(len(self.overall_list_of_coordinates[i])):
+                print(self.overall_list_of_coordinates[i][j])
+                label = self.define_sd_labels(i, j)
+                self.wf.write("%s %s %s %s \n" % (self.overall_list_of_coordinates[i][j][0],
+                                                  self.overall_list_of_coordinates[i][j][1],
+                                                  self.overall_list_of_coordinates[i][j][2], 
+                                                  label)
+                             )
+            print("Moving on")
+        
+    def execute(self):
+        self.write_preamble()
+        for i in range(5,7):
+            self.wf.write(self.f_read[i])
+        self.wf.write("Selective Dynamics \n")
+        if self.fix_magmom == False: 
+            self.write_coordinates()
+        elif self.fix_magmom == True:
+            self.write_rearranged_layers()
+
 class BiUModeling(FixMAGMOM):
     """
 	FUNCTION: This class provides methods to adjust the POSCAR to treat a certain 
@@ -209,11 +204,6 @@ class BiUModeling(FixMAGMOM):
     def __init__(self, fix_magmom = True):
         FixMAGMOM.__init__(self)
         self.fix_magmom = fix_magmom
-        
-    # def get_new_atomic_species(self):
-    #     new_atomic_species = self.atomic_species
-    #     new_atomic_species.insert(0, '%s_B' % self.atomic_species[0])
-    #     return new_atomic_species
 
     def write_new_atomic_species(self):
         # new_atomic_species = self.get_new_atomic_species()
@@ -223,14 +213,6 @@ class BiUModeling(FixMAGMOM):
             else: 
                 self.wf.write(" %s" % (self.atomic_species[i-1]))
         self.wf.write("\n")
-
-    # def get_new_number_of_atoms(self):
-    #     number_of_bulk_atoms = self.get_number_of_bulk_atoms()
-    #     new_number_of_atoms = self.number_of_atoms
-    #     new_number_of_atoms[0] = str(int(int(self.number_of_atoms[0]) - number_of_bulk_atoms))
-    #     new_number_of_atoms.insert(0, str(int(number_of_bulk_atoms)))
-
-    #     return new_number_of_atoms
 
     def write_new_number_of_atoms(self):
         # new_number_of_atoms = self.get_new_number_of_atoms()
@@ -277,5 +259,6 @@ class BiUModeling(FixMAGMOM):
         else: 
             self.write_coordinates()
 
-biu = BiUModeling()
-biu.execute()
+
+sd = SelectiveDynamics("0.38")
+sd.execute()
