@@ -171,7 +171,8 @@ class FixMAGMOM(ProcessFile):
         self.rearrange_layers_by_z()
         self.rearranged_overall_coordinates = []
         self.overall_list_of_layers = self.initialize_list_of_layers()
-        
+        print("atomic species", self.atomic_species)
+        print("number of atoms", self.number_of_atoms)
         for i in range(len(self.atomic_species)):
             for k in range(len(self.overall_list_of_coordinates[i])):
                 for j in range(self.tot_layers):
@@ -190,10 +191,9 @@ class FixMAGMOM(ProcessFile):
             for j in range(self.tot_layers):
                 self.overall_list_of_layers[i][j].sort(key = lambda y: float(y[1]))  
                 for x in range(len(self.overall_list_of_layers[i][j])):
-                    self.wf.write("%s %s %s ! %s \n" % (self.overall_list_of_layers[i][j][x][0], 
+                    self.wf.write("%s %s %s \n" % (self.overall_list_of_layers[i][j][x][0], 
                                                         self.overall_list_of_layers[i][j][x][1], 
-                                                        self.overall_list_of_layers[i][j][x][2],
-                                                        self.overall_list_of_layers[i][j][x][3]))
+                                                        self.overall_list_of_layers[i][j][x][2]))
 
 ### NOTE: self.overall_list_of_coordinates is a list of lists; the lists it contains corresponds to each element in the POSCAR. The lists in THOSE lists correspond to the coordinates; this isn't arranged according to y-axis yet 
 
@@ -206,28 +206,57 @@ class BiUModeling(FixMAGMOM):
 	TODO: This is hardcoded for CuO (clean). Consider bond length z-components from PyMatGen and surfaces with adsorbed atoms
 	"""
 
+    def __init__(self, fix_magmom = True):
+        FixMAGMOM.__init__(self)
+        self.fix_magmom = fix_magmom
+        
+    # def get_new_atomic_species(self):
+    #     new_atomic_species = self.atomic_species
+    #     new_atomic_species.insert(0, '%s_B' % self.atomic_species[0])
+    #     return new_atomic_species
+
     def write_new_atomic_species(self):
-        for i in range(len(self.atomic_species)):
-            self.wf.write(" %s" % (self.atomic_species[i]))
+        # new_atomic_species = self.get_new_atomic_species()
+        for i in range(len(self.atomic_species)+1):
+            if i == 0: 
+                self.wf.write(" %s_B" % self.atomic_species[i])
+            else: 
+                self.wf.write(" %s" % (self.atomic_species[i-1]))
         self.wf.write("\n")
 
+    # def get_new_number_of_atoms(self):
+    #     number_of_bulk_atoms = self.get_number_of_bulk_atoms()
+    #     new_number_of_atoms = self.number_of_atoms
+    #     new_number_of_atoms[0] = str(int(int(self.number_of_atoms[0]) - number_of_bulk_atoms))
+    #     new_number_of_atoms.insert(0, str(int(number_of_bulk_atoms)))
+
+    #     return new_number_of_atoms
+
     def write_new_number_of_atoms(self):
-        number_of_bulk_atoms = self.get_number_of_bulk_atoms()
-        self.number_of_atoms[0] = str(int(int(self.number_of_atoms[0]) - number_of_bulk_atoms))
-        self.number_of_atoms.insert(0, str(int(number_of_bulk_atoms)))
-        for i in range(len(self.number_of_atoms)):
-            self.wf.write(" %s" % (self.number_of_atoms[i]))
+        # new_number_of_atoms = self.get_new_number_of_atoms()
+        number_of_bulk_atoms = int(self.get_number_of_bulk_atoms())
+
+        for i in range(len(self.number_of_atoms)+1):
+            if i == 0:
+                n = int(self.number_of_atoms[0]) - number_of_bulk_atoms
+                self.wf.write(" %s" % n)
+            elif i == 1:
+                self.wf.write(" %s" % number_of_bulk_atoms)
+            else: 
+                self.wf.write(" %s" % (self.number_of_atoms[i-1]))
+
         self.wf.write("\n")
     
     def reassign_atomic_species(self):
         """
         FUNCTION: Correctly label bulk transition metal
         """
-        for i in range(int(self.number_of_atoms[0])):
+        number_of_bulk_atoms = self.get_number_of_bulk_atoms()
+        for i in range(int(number_of_bulk_atoms)):
             self.overall_list_of_coordinates[0][i][3] = self.atomic_species[0]
-        print(self.overall_list_of_coordinates[0])
     
     def write_coordinates(self):
+        # Use if MAGMOM not needed to be fixed 
         for i in range(len(self.overall_list_of_coordinates)):
             for j in range(len(self.overall_list_of_coordinates[i])):
                 print(self.overall_list_of_coordinates[i][j])
@@ -240,12 +269,13 @@ class BiUModeling(FixMAGMOM):
         
     def execute(self):
         self.write_preamble()
-        self.atomic_species.insert(0, '%s_B' % self.atomic_species[0])
         self.write_new_atomic_species()
         self.write_new_number_of_atoms()
-        self.rearrange_layers_by_z()
         self.reassign_atomic_species()
-        self.write_coordinates()
-    
-fm = FixMAGMOM()
-fm.write_rearranged_layers()
+        if self.fix_magmom == True:
+            self.write_rearranged_layers()
+        else: 
+            self.write_coordinates()
+
+biu = BiUModeling()
+biu.execute()
