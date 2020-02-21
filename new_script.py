@@ -231,7 +231,6 @@ class SelectiveDynamics(BiUModeling):
     def write_coordinates(self): 
         for i in range(len(self.overall_list_of_coordinates)):
             for j in range(len(self.overall_list_of_coordinates[i])):
-                print(self.overall_list_of_coordinates[i][j])
                 label = self.define_sd_labels(i, j)
 
                 self.wf.write("%s %s %s %s %s \n" % (self.overall_list_of_coordinates[i][j][0],
@@ -255,7 +254,6 @@ class SelectiveDynamics(BiUModeling):
                                                         label,
                                                         self.overall_list_of_layers[i][j][x][3])
                                  )
-        print(self.overall_list_of_layers)
 
     def execute(self):
         if self.biu_model == False: 
