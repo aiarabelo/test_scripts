@@ -1,11 +1,11 @@
 import re
-import os
+import os 
 
 class ProcessFile:
     """
     FUNCTION: Provides methods for reading the POSCAR file
     """
-    def __init__(self, filename = "POSCAR", output_filename = "xPOSCAR"):
+    def __init__(self, filename = "POSCAR2", output_filename = "xPOSCAR"):
         self.filename = filename
         self.output_filename = output_filename
         self.wf = open(self.output_filename, "a+")
@@ -20,7 +20,6 @@ class ProcessFile:
     def write_preamble(self):
         """
         FUNCTION: writes the first 5 lines of the POSCAR
-        TODO: Change this to 5 if Bi-u modeling 
         """
         for i in range(0,5):
             self.wf.write(self.f_read[i])
@@ -68,7 +67,7 @@ class FixMAGMOM(ProcessFile):
     """
     FUNCTION: Arranges the POSCAR coordinates based on layer #, then based on y-axis  
     """
-    def __init__(self, tot_layers = 7, surface_layers = 2, adsorbate_atoms = 0,
+    def __init__(self, tot_layers = 3, surface_layers = 1, adsorbate_atoms = 0,
                  tolerance = 0):
         ProcessFile.__init__(self)
         self.overall_list_of_coordinates = self.parse_coordinates()
@@ -134,11 +133,13 @@ class FixMAGMOM(ProcessFile):
                 for j in range(self.tot_layers):
                     previous_layer_height = j*self.adjusted_height_range
                     layer_height = (j+1)*self.adjusted_height_range
-                    if previous_layer_height < float(self.overall_list_of_coordinates[i][k][2]) < layer_height:
+                    if previous_layer_height <= float(self.overall_list_of_coordinates[i][k][2]) <= layer_height:
                         self.overall_list_of_layers[i][j].append(self.overall_list_of_coordinates[i][k])
                     else:
                         continue
+        print("OVERALL: ", self.overall_list_of_layers[0])
 
+        print("OVERALL: ", self.overall_list_of_layers[1])
         return self.overall_list_of_layers
 
 ### NOTE: self.overall_list_of_coordinates is a list of lists; the lists it contains corresponds to each element in the POSCAR. The lists in THOSE lists correspond to the coordinates; this isn't arranged according to y-axis yet 
@@ -235,6 +236,7 @@ class SelectiveDynamics(BiUModeling):
             for j in range(len(self.overall_list_of_coordinates[i])):
                 print(self.overall_list_of_coordinates[i][j])
                 label = self.define_sd_labels(i, j)
+
                 self.wf.write("%s %s %s %s %s \n" % (self.overall_list_of_coordinates[i][j][0],
                                                   self.overall_list_of_coordinates[i][j][1],
                                                   self.overall_list_of_coordinates[i][j][2], 
@@ -247,6 +249,7 @@ class SelectiveDynamics(BiUModeling):
         for i in range(len(self.atomic_species)):    
             for j in range(self.tot_layers):
                 self.overall_list_of_layers[i][j].sort(key = lambda y: float(y[1]))  
+                
                 for x in range(len(self.overall_list_of_layers[i][j])):    
                     label = self.define_sd_labels(i, j, x)
                     self.wf.write("%s %s %s %s %s \n" % (self.overall_list_of_layers[i][j][x][0], 
@@ -255,6 +258,8 @@ class SelectiveDynamics(BiUModeling):
                                                         label,
                                                         self.overall_list_of_layers[i][j][x][3])
                                  )
+        print(self.overall_list_of_layers)
+
     def execute(self):
         if self.biu_model == False: 
             self.write_preamble()
@@ -267,6 +272,7 @@ class SelectiveDynamics(BiUModeling):
             self.write_new_atomic_species()
             self.write_new_number_of_atoms()
             self.reassign_atomic_species()
+            self.wf.write(self.f_read[7])
             self.wf.write("Selective Dynamics \n")
             self.write_rearranged_layers()
 
