@@ -5,7 +5,7 @@ class ProcessFile:
     """
     FUNCTION: Provides methods for reading the POSCAR file
     """
-    def __init__(self, filename = "POSCAR2", output_filename = "xPOSCAR"):
+    def __init__(self, filename = "POSCAR", output_filename = "xPOSCAR"):
         self.filename = filename
         self.output_filename = output_filename
         self.wf = open(self.output_filename, "a+")
@@ -137,9 +137,6 @@ class FixMAGMOM(ProcessFile):
                         self.overall_list_of_layers[i][j].append(self.overall_list_of_coordinates[i][k])
                     else:
                         continue
-        print("OVERALL: ", self.overall_list_of_layers[0])
-
-        print("OVERALL: ", self.overall_list_of_layers[1])
         return self.overall_list_of_layers
 
 ### NOTE: self.overall_list_of_coordinates is a list of lists; the lists it contains corresponds to each element in the POSCAR. The lists in THOSE lists correspond to the coordinates; this isn't arranged according to y-axis yet 
@@ -263,17 +260,18 @@ class SelectiveDynamics(BiUModeling):
     def execute(self):
         if self.biu_model == False: 
             self.write_preamble()
-            self.wf.write("Selective Dynamics \n")
-            for i in range(5,7):
+            for i in range(5,6):
                 self.wf.write(self.f_read[i])
+            self.wf.write("Selective Dynamics \n")
+            self.wf.write(self.f_read[7])
             self.write_coordinates()
         elif self.biu_model == True:
             self.write_preamble()
             self.write_new_atomic_species()
             self.write_new_number_of_atoms()
             self.reassign_atomic_species()
-            self.wf.write(self.f_read[7])
             self.wf.write("Selective Dynamics \n")
+            self.wf.write(self.f_read[7])
             self.write_rearranged_layers()
 
 if __name__ == "__main__":
@@ -282,3 +280,4 @@ if __name__ == "__main__":
     print("Bulk height = ", bulk_height)
     sd = SelectiveDynamics(bulk_height)
     sd.execute()
+    os.system("mv xPOSCAR POSCAR")
