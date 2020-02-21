@@ -158,7 +158,6 @@ class BiUModeling(FixMAGMOM):
         self.fix_magmom = fix_magmom
 
     def write_new_atomic_species(self):
-        # new_atomic_species = self.get_new_atomic_species()
         for i in range(len(self.atomic_species)+1):
             if i == 0: 
                 self.wf.write(" %s_B" % self.atomic_species[i])
@@ -167,15 +166,14 @@ class BiUModeling(FixMAGMOM):
         self.wf.write("\n")
 
     def write_new_number_of_atoms(self):
-        # new_number_of_atoms = self.get_new_number_of_atoms()
         number_of_bulk_atoms = int(self.get_number_of_bulk_atoms())
 
         for i in range(len(self.number_of_atoms)+1):
             if i == 0:
+                self.wf.write(" %s" % number_of_bulk_atoms)
+            elif i == 1:
                 n = int(self.number_of_atoms[0]) - number_of_bulk_atoms
                 self.wf.write(" %s" % n)
-            elif i == 1:
-                self.wf.write(" %s" % number_of_bulk_atoms)
             else: 
                 self.wf.write(" %s" % (self.number_of_atoms[i-1]))
 
@@ -189,24 +187,15 @@ class BiUModeling(FixMAGMOM):
         for i in range(int(number_of_bulk_atoms)):
             self.overall_list_of_coordinates[0][i][3] = self.atomic_species[0]
 
-    def define_sd_labels(self, i, j):
-        if float(self.overall_list_of_coordinates[i][j][2]) < self.height:
-            label = "T T T !"
-        else:
-            label = "F F F !"
-        return label
-
-    def write_rearranged_layers(self, label=""):
+    def write_unsd_rearranged_layers(self):
         self.overall_list_of_layers = self.rearrange_layers_by_y()
         for i in range(len(self.atomic_species)):    
             for j in range(self.tot_layers):
-                label = self.define_sd_labels(i, j)
                 self.overall_list_of_layers[i][j].sort(key = lambda y: float(y[1]))  
                 for x in range(len(self.overall_list_of_layers[i][j])):
-                    self.wf.write("%s %s %s %s %s \n" % (self.overall_list_of_layers[i][j][x][0], 
+                    self.wf.write("%s %s %s %s \n" % (self.overall_list_of_layers[i][j][x][0], 
                                                         self.overall_list_of_layers[i][j][x][1], 
                                                         self.overall_list_of_layers[i][j][x][2],
-                                                        label,
                                                         self.overall_list_of_layers[i][j][x][3])
                                  )
     def execute(self):
@@ -215,7 +204,7 @@ class BiUModeling(FixMAGMOM):
         self.write_new_atomic_species()
         self.write_new_number_of_atoms()
         self.reassign_atomic_species()
-        self.write_rearranged_layers()
+        self.write_unsd_rearranged_layers()
 
 
 class SelectiveDynamics(BiUModeling):
@@ -227,6 +216,19 @@ class SelectiveDynamics(BiUModeling):
         BiUModeling.__init__(self)
         self.height = float(height)
         self.biu_model = biu_model
+    
+    def define_sd_labels(self, i, j, x=None):
+        if self.biu_model == False:
+            if float(self.overall_list_of_coordinates[i][j][2]) < self.height:
+                label = "T T T !"
+            else:
+                label = "F F F !"
+        elif self.biu_model == True: 
+            if float(self.overall_list_of_layers[i][j][x][2]) < self.height:
+                label = "T T T !"
+            else:
+                label = "F F F !"
+        return label
 
     def write_coordinates(self): 
         for i in range(len(self.overall_list_of_coordinates)):
@@ -239,7 +241,20 @@ class SelectiveDynamics(BiUModeling):
                                                   label,
                                                   self.overall_list_of_coordinates[i][j][3])
                              )
-        
+
+    def write_rearranged_layers(self):
+        self.overall_list_of_layers = self.rearrange_layers_by_y()
+        for i in range(len(self.atomic_species)):    
+            for j in range(self.tot_layers):
+                self.overall_list_of_layers[i][j].sort(key = lambda y: float(y[1]))  
+                for x in range(len(self.overall_list_of_layers[i][j])):    
+                    label = self.define_sd_labels(i, j, x)
+                    self.wf.write("%s %s %s %s %s \n" % (self.overall_list_of_layers[i][j][x][0], 
+                                                        self.overall_list_of_layers[i][j][x][1], 
+                                                        self.overall_list_of_layers[i][j][x][2],
+                                                        label,
+                                                        self.overall_list_of_layers[i][j][x][3])
+                                 )
     def execute(self):
         if self.biu_model == False: 
             self.write_preamble()
@@ -254,8 +269,10 @@ class SelectiveDynamics(BiUModeling):
             self.reassign_atomic_species()
             self.wf.write("Selective Dynamics \n")
             self.write_rearranged_layers()
-            print("TRYING!!")
 
 if __name__ == "__main__":
-    sd = SelectiveDynamics("0.37")
+    fm = FixMAGMOM()
+    bulk_height = fm.get_bulk_height()
+    print("Bulk height = ", bulk_height)
+    sd = SelectiveDynamics(bulk_height)
     sd.execute()
