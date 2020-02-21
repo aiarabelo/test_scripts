@@ -1,10 +1,11 @@
 import re
+import os
 
 class ProcessFile:
     """
     FUNCTION: Provides methods for reading the POSCAR file
     """
-    def __init__(self, filename = "xPOSCAR", output_filename = "xxPOSCAR"):
+    def __init__(self, filename = "POSCAR", output_filename = "xPOSCAR"):
         self.filename = filename
         self.output_filename = output_filename
         self.wf = open(self.output_filename, "a+")
@@ -97,6 +98,7 @@ class FixMAGMOM(ProcessFile):
         max_height = float(max(heights))
         height_range = max_height/self.tot_layers
         adjusted_height_range = height_range - self.tolerance
+
         return adjusted_height_range
 
     def get_bulk_height(self):
@@ -157,14 +159,14 @@ class SelectiveDynamics(FixMAGMOM):
     FUNCTION: Freezes based on given height 
     TODO: Base on # of desired layers to be frozen as well 
     """
-    def __init__(self, height, fix_magmom = True):
+    def __init__(self, selected_height, fix_magmom = True):
         ProcessFile.__init__(self)
         self.overall_list_of_coordinates = self.parse_coordinates()
-        self.height = float(height)
+        self.selected_height = float(selected_height)
         self.fix_magmom = fix_magmom
 
     def define_sd_labels(self, i, j):
-        if float(self.overall_list_of_coordinates[i][j][2]) < self.height:
+        if float(self.overall_list_of_coordinates[i][j][2]) < self.selected_height:
             label = "T T T !"
         else:
             label = "F F F !"
@@ -259,6 +261,10 @@ class BiUModeling(FixMAGMOM):
         else: 
             self.write_coordinates()
 
-
-sd = SelectiveDynamics("0.38")
-sd.execute()
+if __name__ == "__main__":
+    biu = BiUModeling()
+    fm = FixMAGMOM()
+    biu.execute()
+    os.system("mv xPOSCAR POSCAR")
+    sd = SelectiveDynamics("0.37")
+    sd.execute()
