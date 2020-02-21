@@ -71,7 +71,6 @@ class FixMAGMOM(ProcessFile):
     def __init__(self, tot_layers = 7, surface_layers = 2, adsorbate_atoms = 0,
                  tolerance = 0):
         ProcessFile.__init__(self)
-       
         self.overall_list_of_coordinates = self.parse_coordinates()
 
         self.tot_layers = int(tot_layers)
@@ -142,57 +141,8 @@ class FixMAGMOM(ProcessFile):
 
         return self.overall_list_of_layers
 
-    def write_rearranged_layers(self):
-        self.overall_list_of_layers = self.rearrange_layers_by_y()
-        for i in range(len(self.atomic_species)):    
-            for j in range(self.tot_layers):
-                self.overall_list_of_layers[i][j].sort(key = lambda y: float(y[1]))  
-                for x in range(len(self.overall_list_of_layers[i][j])):
-                    self.wf.write("%s %s %s \n" % (self.overall_list_of_layers[i][j][x][0], 
-                                                        self.overall_list_of_layers[i][j][x][1], 
-                                                        self.overall_list_of_layers[i][j][x][2]))
-
 ### NOTE: self.overall_list_of_coordinates is a list of lists; the lists it contains corresponds to each element in the POSCAR. The lists in THOSE lists correspond to the coordinates; this isn't arranged according to y-axis yet 
 
-class SelectiveDynamics(FixMAGMOM):
-    """
-    FUNCTION: Freezes based on given height 
-    TODO: Base on # of desired layers to be frozen as well 
-    """
-    def __init__(self, selected_height, fix_magmom = True):
-        ProcessFile.__init__(self)
-        self.overall_list_of_coordinates = self.parse_coordinates()
-        self.selected_height = float(selected_height)
-        self.fix_magmom = fix_magmom
-
-    def define_sd_labels(self, i, j):
-        if float(self.overall_list_of_coordinates[i][j][2]) < self.selected_height:
-            label = "T T T !"
-        else:
-            label = "F F F !"
-        return label
-
-    def write_coordinates(self): 
-        for i in range(len(self.overall_list_of_coordinates)):
-            for j in range(len(self.overall_list_of_coordinates[i])):
-                print(self.overall_list_of_coordinates[i][j])
-                label = self.define_sd_labels(i, j)
-                self.wf.write("%s %s %s %s \n" % (self.overall_list_of_coordinates[i][j][0],
-                                                  self.overall_list_of_coordinates[i][j][1],
-                                                  self.overall_list_of_coordinates[i][j][2], 
-                                                  label)
-                             )
-            print("Moving on")
-        
-    def execute(self):
-        self.write_preamble()
-        for i in range(5,7):
-            self.wf.write(self.f_read[i])
-        self.wf.write("Selective Dynamics \n")
-        if self.fix_magmom == False: 
-            self.write_coordinates()
-        elif self.fix_magmom == True:
-            self.write_rearranged_layers()
 
 class BiUModeling(FixMAGMOM):
     """
@@ -238,33 +188,74 @@ class BiUModeling(FixMAGMOM):
         number_of_bulk_atoms = self.get_number_of_bulk_atoms()
         for i in range(int(number_of_bulk_atoms)):
             self.overall_list_of_coordinates[0][i][3] = self.atomic_species[0]
-    
-    def write_coordinates(self):
-        # Use if MAGMOM not needed to be fixed 
-        for i in range(len(self.overall_list_of_coordinates)):
-            for j in range(len(self.overall_list_of_coordinates[i])):
-                print(self.overall_list_of_coordinates[i][j])
-                self.wf.write("%s %s %s ! %s \n" % (self.overall_list_of_coordinates[i][j][0],
-                                                    self.overall_list_of_coordinates[i][j][1],
-                                                    self.overall_list_of_coordinates[i][j][2], 
-                                                    self.overall_list_of_coordinates[i][j][3])
-                             )
-            print("Moving on")
-        
+
+    def define_sd_labels(self, i, j):
+        if float(self.overall_list_of_coordinates[i][j][2]) < self.height:
+            label = "T T T !"
+        else:
+            label = "F F F !"
+        return label
+
+    def write_rearranged_layers(self, label=""):
+        self.overall_list_of_layers = self.rearrange_layers_by_y()
+        for i in range(len(self.atomic_species)):    
+            for j in range(self.tot_layers):
+                label = self.define_sd_labels(i, j)
+                self.overall_list_of_layers[i][j].sort(key = lambda y: float(y[1]))  
+                for x in range(len(self.overall_list_of_layers[i][j])):
+                    self.wf.write("%s %s %s %s %s \n" % (self.overall_list_of_layers[i][j][x][0], 
+                                                        self.overall_list_of_layers[i][j][x][1], 
+                                                        self.overall_list_of_layers[i][j][x][2],
+                                                        label,
+                                                        self.overall_list_of_layers[i][j][x][3])
+                                 )
     def execute(self):
+        # Execute from here if you don't need to use selective dynamics. 
         self.write_preamble()
         self.write_new_atomic_species()
         self.write_new_number_of_atoms()
         self.reassign_atomic_species()
-        if self.fix_magmom == True:
-            self.write_rearranged_layers()
-        else: 
+        self.write_rearranged_layers()
+
+
+class SelectiveDynamics(BiUModeling):
+    """
+    FUNCTION: Freezes based on given height 
+    TODO: Base on # of desired layers to be frozen as well 
+    """
+    def __init__(self, height, biu_model = True):
+        BiUModeling.__init__(self)
+        self.height = float(height)
+        self.biu_model = biu_model
+
+    def write_coordinates(self): 
+        for i in range(len(self.overall_list_of_coordinates)):
+            for j in range(len(self.overall_list_of_coordinates[i])):
+                print(self.overall_list_of_coordinates[i][j])
+                label = self.define_sd_labels(i, j)
+                self.wf.write("%s %s %s %s %s \n" % (self.overall_list_of_coordinates[i][j][0],
+                                                  self.overall_list_of_coordinates[i][j][1],
+                                                  self.overall_list_of_coordinates[i][j][2], 
+                                                  label,
+                                                  self.overall_list_of_coordinates[i][j][3])
+                             )
+        
+    def execute(self):
+        if self.biu_model == False: 
+            self.write_preamble()
+            self.wf.write("Selective Dynamics \n")
+            for i in range(5,7):
+                self.wf.write(self.f_read[i])
             self.write_coordinates()
+        elif self.biu_model == True:
+            self.write_preamble()
+            self.write_new_atomic_species()
+            self.write_new_number_of_atoms()
+            self.reassign_atomic_species()
+            self.wf.write("Selective Dynamics \n")
+            self.write_rearranged_layers()
+            print("TRYING!!")
 
 if __name__ == "__main__":
-    biu = BiUModeling()
-    fm = FixMAGMOM()
-    biu.execute()
-    os.system("mv xPOSCAR POSCAR")
     sd = SelectiveDynamics("0.37")
     sd.execute()
