@@ -66,6 +66,7 @@ class ProcessFile:
 class FixMAGMOM(ProcessFile):
     """
     FUNCTION: Arranges the POSCAR coordinates based on layer #, then based on y-axis  
+    TODO: Should automatically detect number of layers
     """
     def __init__(self, tot_layers = 3, surface_layers = 1, adsorbate_atoms = 0,
                  tolerance = 0):
@@ -109,6 +110,7 @@ class FixMAGMOM(ProcessFile):
         FUNCTION: Returns the number of transition metal bulk atoms (first element)
         """
         number_of_bulk_atoms = int(self.number_of_atoms[0]) - self.surface_layers*(int(self.number_of_atoms[0])/self.tot_layers)
+        print(number_of_bulk_atoms)
         return number_of_bulk_atoms
 
     def rearrange_layers_by_z(self):
